@@ -47,6 +47,7 @@ public static class ExplorerCore
         Directory.CreateDirectory(ExplorerFolder);
         ConfigManager.Init(Loader.ConfigHandler);
 
+        System.Diagnostics.Debugger.Break();
         Universe.Init(ConfigManager.Startup_Delay_Time.Value, LateInit, Log, new()
         {
             Disable_EventSystem_Override = ConfigManager.Disable_EventSystem_Override.Value,

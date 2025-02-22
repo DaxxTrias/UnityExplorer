@@ -159,6 +159,7 @@ namespace UnityExplorer.Runtime
             "UnityEngine.Texture2D+SetPixelDataImplArrayDelegate.Invoke",
             "UnityEngine.Texture2D+SetPixelDataImplDelegate.Invoke",
             "UnityEngine.Texture2D.SetPixelDataImpl",
+            "UnityEngine.UIElements.PointerStationaryEvent",
             "UnityEngine.Texture2D.SetPixelDataImplArray",
             "UnityEngine.Texture2DArray+SetPixelDataImplArrayDelegate.Invoke",
             "UnityEngine.Texture2DArray+SetPixelDataImplDelegate.Invoke",
