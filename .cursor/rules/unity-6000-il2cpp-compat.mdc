@@ -1,0 +1,15 @@
+---
+description: Unity 6000 IL2CPP compatibility notes for UnityExplorer and UniverseLib
+globs: src/**/*.cs,UniverseLib/src/**/*.cs
+alwaysApply: false
+---
+
+# Unity 6000 IL2CPP Compatibility
+
+When debugging UnityExplorer on Unity 6000.3+ IL2CPP games such as Pantheon, assume generated Unity APIs may no longer match older signatures.
+
+- Avoid direct use of `Scene.handle` and `Scene.m_Handle`; Unity 6000.3 may expose `SceneHandle` instead of `int`. Prefer `Scene.IsValid()`, `Scene.name`, equality, and object-scan fallbacks. Relevant files: [SceneHandler.cs](mdc:src/ObjectExplorer/SceneHandler.cs), [SceneExplorer.cs](mdc:src/ObjectExplorer/SceneExplorer.cs), [Il2CppProvider.cs](mdc:UniverseLib/src/Runtime/Il2Cpp/Il2CppProvider.cs).
+- Do not call `AssetBundle.LoadFromMemory_Internal` through an IL2CPP icall on Unity 6000. It can route through Span-based trampolines and crash. Load embedded UI bundles through `LoadFromStreamInternal` instead. See [AssetBundle.cs](mdc:UniverseLib/src/Runtime/Il2Cpp/AssetBundle.cs).
+- Treat `mcs.dll` as optional. Missing `mcs` should disable the C# Console only, not block Explorer startup or the inspector/options UI. See [UERuntimeHelper.cs](mdc:src/Runtime/UERuntimeHelper.cs) and [UIManager.cs](mdc:src/UI/UIManager.cs).
+- If a Unity 6000 compatibility fallback is intentional, keep it bounded and log once where possible; repeated per-frame trampoline exceptions make the UI unusable.
+- Validate fixes with `dotnet build UniverseLib\src\UniverseLib.sln -c Release_IL2CPP_Interop_ML` before `dotnet build src\UnityExplorer.csproj -c ML_Cpp_CoreCLR`.
