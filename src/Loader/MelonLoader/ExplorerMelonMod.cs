@@ -1,4 +1,4 @@
-﻿#if ML
+#if ML
 using System;
 using System.IO;
 using MelonLoader;
@@ -13,6 +13,7 @@ using UnityExplorer.Loader.ML;
 #endif
 
 [assembly: MelonInfo(typeof(ExplorerMelonMod), ExplorerCore.NAME, ExplorerCore.VERSION, ExplorerCore.AUTHOR)]
+[assembly: MelonOptionalDependencies("mcs")]
 [assembly: MelonGame(null, null)]
 [assembly: MelonColor(ConsoleColor.DarkCyan)]
 

@@ -1,4 +1,4 @@
-﻿using UnityExplorer.Config;
+using UnityExplorer.Config;
 using UnityExplorer.CSConsole;
 using UnityExplorer.Inspectors;
 using UnityExplorer.UI.Panels;
@@ -34,6 +34,7 @@ namespace UnityExplorer.UI
         public static VerticalAnchor NavbarAnchor = VerticalAnchor.Top;
 
         public static bool Initializing { get; internal set; } = true;
+        private static bool csConsoleAvailable;
 
         internal static UIBase UiBase { get; private set; }
         public static GameObject UIRoot => UiBase?.RootObject;
@@ -68,6 +69,8 @@ namespace UnityExplorer.UI
 
         internal static void InitUI()
         {
+            csConsoleAvailable = TryLoadOptionalAssembly("mcs");
+
             UiBase = UniversalUI.RegisterUI<ExplorerUIBase>(ExplorerCore.GUID, Update);
 
             UIRootRect = UIRoot.GetComponent<RectTransform>();
@@ -86,7 +89,10 @@ namespace UnityExplorer.UI
             UIPanels.Add(Panels.AutoCompleter, new AutoCompleteModal(UiBase));
             UIPanels.Add(Panels.ObjectExplorer, new ObjectExplorerPanel(UiBase));
             UIPanels.Add(Panels.Inspector, new InspectorPanel(UiBase));
-            UIPanels.Add(Panels.CSConsole, new CSConsolePanel(UiBase));
+            if (csConsoleAvailable)
+                UIPanels.Add(Panels.CSConsole, new CSConsolePanel(UiBase));
+            else
+                ExplorerCore.LogWarning("mcs.dll is not available; disabling the C# Console panel.");
             UIPanels.Add(Panels.HookManager, new HookManagerPanel(UiBase));
             UIPanels.Add(Panels.Freecam, new FreeCamPanel(UiBase));
             UIPanels.Add(Panels.Clipboard, new ClipboardPanel(UiBase));
@@ -99,7 +105,17 @@ namespace UnityExplorer.UI
 
             // Call some initialize methods
             Notification.Init(UIRoot);
-            ConsoleController.Init();
+            if (csConsoleAvailable)
+            {
+                try
+                {
+                    InitConsoleController();
+                }
+                catch (Exception ex)
+                {
+                    ExplorerCore.LogWarning($"Exception initializing C# Console: {ex.ReflectionExToString()}");
+                }
+            }
 
             // Failsafe fix, in some games all dropdowns displayed values are blank on startup for some reason.
             foreach (Dropdown dropdown in UIRoot.GetComponentsInChildren<Dropdown>(true))
@@ -109,6 +125,28 @@ namespace UnityExplorer.UI
 
             if (ConfigManager.Hide_On_Startup.Value)
                 ShowMenu = false;
+        }
+
+        private static bool TryLoadOptionalAssembly(string assemblyName)
+        {
+            try
+            {
+                if (AppDomain.CurrentDomain.GetAssemblies().Any(it => it.GetName().Name == assemblyName))
+                    return true;
+
+                Assembly.Load(assemblyName);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void InitConsoleController()
+        {
+            ConsoleController.Init();
         }
 
         // Main UI Update loop

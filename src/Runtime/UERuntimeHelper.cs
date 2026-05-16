@@ -1,4 +1,4 @@
-﻿using UnityExplorer.Config;
+using UnityExplorer.Config;
 
 namespace UnityExplorer.Runtime
 {
@@ -60,11 +60,46 @@ namespace UnityExplorer.Runtime
                         currentBlacklist.Add(sig);
                 }
 
-                Mono.CSharp.IL2CPP.Blacklist.SignatureBlacklist = currentBlacklist;
+                ApplyCompilerBlacklist();
             }
             catch (Exception ex)
             {
                 ExplorerCore.LogWarning($"Exception setting up reflection blacklist: {ex.ReflectionExToString()}");
+            }
+        }
+
+        private static void ApplyCompilerBlacklist()
+        {
+            Type blacklistType;
+            try
+            {
+                blacklistType = Type.GetType("Mono.CSharp.IL2CPP.Blacklist, mcs", throwOnError: false);
+            }
+            catch
+            {
+                blacklistType = null;
+            }
+
+            if (blacklistType == null)
+            {
+                ExplorerCore.LogWarning("mcs.dll is not loaded; C# console compiler blacklist will not be applied.");
+                return;
+            }
+
+            MemberInfo member = blacklistType.GetProperty("SignatureBlacklist", BindingFlags.Public | BindingFlags.Static)
+                ?? (MemberInfo)blacklistType.GetField("SignatureBlacklist", BindingFlags.Public | BindingFlags.Static);
+
+            switch (member)
+            {
+                case PropertyInfo property:
+                    property.SetValue(null, currentBlacklist);
+                    break;
+                case FieldInfo field:
+                    field.SetValue(null, currentBlacklist);
+                    break;
+                default:
+                    ExplorerCore.LogWarning("mcs.dll does not expose Mono.CSharp.IL2CPP.Blacklist.SignatureBlacklist.");
+                    break;
             }
         }
 

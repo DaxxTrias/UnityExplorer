@@ -1,4 +1,4 @@
-﻿using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement;
 
 #nullable enable
 
@@ -55,6 +55,7 @@ public static class SceneHandler
     public static bool DontDestroyExists { get; private set; }
 
     private const string dontDestroyName = "DontDestroyOnLoad";
+    private static bool loggedRootObjectFallback;
 
     internal static void Init()
     {
@@ -80,7 +81,15 @@ public static class SceneHandler
 #pragma warning disable CS0618 // 型またはメンバーが旧型式です
             ExplorerCore.LogWarning("Falling back to checking loaded scenes for DontDestroyOnLoad via SceneManager.GetAllScenes(). This uses a deprecated API.");
             // 非推奨APIだけど、6年近くたってもまだ使われてるので仕方なく使う
-            DontDestroyExists = SceneManager.GetAllScenes().Any(s => s.name == dontDestroyName);
+            try
+            {
+                DontDestroyExists = SceneManager.GetAllScenes().Any(s => s.name == dontDestroyName);
+            }
+            catch (Exception fallbackEx)
+            {
+                DontDestroyExists = false;
+                ExplorerCore.LogWarning($"Unable to check for DontDestroyOnLoad via SceneManager.GetAllScenes(); skipping that scene. {fallbackEx}");
+            }
 #pragma warning restore CS0618 // 型またはメンバーが旧型式です
         }
 
@@ -159,24 +168,68 @@ public static class SceneHandler
         // Finally, update the root objects list.
         if (SelectedScene.HasValue && SelectedScene.Value.IsValid())
         {
-            CurrentRootObjects = RuntimeHelper.GetRootGameObjects(SelectedScene.Value);
+            try
+            {
+                CurrentRootObjects = RuntimeHelper.GetRootGameObjects(SelectedScene.Value);
+            }
+            catch (Exception ex)
+            {
+                if (!loggedRootObjectFallback)
+                {
+                    loggedRootObjectFallback = true;
+                    ExplorerCore.LogWarning($"Unable to get scene root objects via Scene.GetRootGameObjects(); using object scan fallback. {ex}");
+                }
+
+                CurrentRootObjects = FindRootObjectsInScene(SelectedScene.Value);
+            }
         }
         else
         {
-            UnityEngine.Object[] allObjects = RuntimeHelper.FindObjectsOfTypeAll(typeof(GameObject));
-            List<GameObject> objects = new();
-            foreach (UnityEngine.Object obj in allObjects)
-            {
-                GameObject? go = obj.TryCast<GameObject>();
-                if (go != null &&
-                    go.transform != null &&
-                    go.transform.parent == null && 
-                    !go.scene.IsValid())
-                {
-                    objects.Add(go);
-                }
-            }
-            CurrentRootObjects = objects;
+            CurrentRootObjects = FindRootObjectsInAssetScene();
+        }
+    }
+
+    private static IEnumerable<GameObject> FindRootObjectsInScene(Scene scene)
+    {
+        try
+        {
+            return EnumerateGameObjects()
+                .Where(go => go.transform != null
+                    && go.transform.parent == null
+                    && go.scene == scene)
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            ExplorerCore.LogWarning($"Unable to scan root objects for scene '{scene.name}': {ex}");
+            return [];
+        }
+    }
+
+    private static IEnumerable<GameObject> FindRootObjectsInAssetScene()
+    {
+        try
+        {
+            return EnumerateGameObjects()
+                .Where(go => go.transform != null
+                    && go.transform.parent == null
+                    && !go.scene.IsValid())
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            ExplorerCore.LogWarning($"Unable to scan root objects for asset scene: {ex}");
+            return [];
+        }
+    }
+
+    private static IEnumerable<GameObject> EnumerateGameObjects()
+    {
+        foreach (UnityEngine.Object obj in RuntimeHelper.FindObjectsOfTypeAll(typeof(GameObject)))
+        {
+            GameObject? go = obj.TryCast<GameObject>();
+            if (go != null)
+                yield return go;
         }
     }
 }
