@@ -1,4 +1,4 @@
-﻿using UnityExplorer.UI.Panels;
+using UnityExplorer.UI.Panels;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
 
@@ -12,7 +12,7 @@ namespace UnityExplorer.UI.Widgets
         string lastGoName;
         string lastPath;
         bool lastParentState;
-        int lastSceneHandle;
+        string lastSceneName;
         string lastTag;
         int lastLayer;
         int lastFlags;
@@ -90,10 +90,11 @@ namespace UnityExplorer.UI.Widgets
                 IsStaticToggle.Set(Target.isStatic, false);
             }
 
-            if (force || Target.scene.handle != lastSceneHandle)
+            string sceneName = Target.scene.IsValid() ? Target.scene.name : "None (Asset/Resource)";
+            if (force || sceneName != lastSceneName)
             {
-                lastSceneHandle = Target.scene.handle;
-                SceneButton.ButtonText.text = Target.scene.IsValid() ? Target.scene.name : "None (Asset/Resource)";
+                lastSceneName = sceneName;
+                SceneButton.ButtonText.text = sceneName;
             }
 
             if (force || (!TagInput.Component.isFocused && Target.tag != lastTag))

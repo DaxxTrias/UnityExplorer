@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine.SceneManagement;
 using UnityExplorer.UI;
 using UnityExplorer.UI.Panels;
@@ -70,7 +70,7 @@ namespace UnityExplorer.ObjectExplorer
             if (SceneHandler.SelectedScene != go.scene)
             {
                 int idx;
-                if (go.scene == default || go.scene.handle == -1)
+                if (go.scene == default || !go.scene.IsValid())
                     idx = sceneDropdown.options.Count - 1;
                 else
                     idx = sceneDropdown.options.IndexOf(sceneToDropdownOption[go.scene]);
@@ -89,7 +89,8 @@ namespace UnityExplorer.ObjectExplorer
             SceneHandler.SelectedScene = SceneHandler.LoadedScenes[value];
             SceneHandler.Update();
             Tree.RefreshData(true, true, true, false);
-            OnSelectedSceneChanged(SceneHandler.SelectedScene.Value);
+            if (SceneHandler.SelectedScene.HasValue)
+                OnSelectedSceneChanged(SceneHandler.SelectedScene.Value);
         }
 
         private void SceneHandler_OnInspectedSceneChanged(Scene scene)
@@ -197,7 +198,8 @@ namespace UnityExplorer.ObjectExplorer
 
             SceneHandler.Update();
             PopulateSceneDropdown(SceneHandler.LoadedScenes);
-            sceneDropdown.captionText.text = sceneToDropdownOption.First().Value.text;
+            if (sceneToDropdownOption.Count > 0)
+                sceneDropdown.captionText.text = sceneToDropdownOption.First().Value.text;
 
             // Filter row
 

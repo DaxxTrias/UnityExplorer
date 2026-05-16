@@ -1,4 +1,4 @@
-﻿using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement;
 
 namespace UnityExplorer.ObjectExplorer;
 
@@ -31,8 +31,8 @@ public static class SearchProvider
         return filter switch
         {
             SceneFilter.Any => true,
-            SceneFilter.DontDestroyOnLoad => scene.handle == -12,
-            SceneFilter.HideAndDontSave => scene == default,
+            SceneFilter.DontDestroyOnLoad => scene.IsValid() && scene.name == "DontDestroyOnLoad",
+            SceneFilter.HideAndDontSave => !scene.IsValid(),
             SceneFilter.ActivelyLoaded => scene.buildIndex != -1,
             _ => false,
         };

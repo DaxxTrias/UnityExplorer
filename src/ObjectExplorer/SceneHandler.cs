@@ -18,6 +18,7 @@ public static class SceneHandler
             }
             if (!value.HasValue)
             {
+                selectedScene = null;
                 return;
             }
             selectedScene = value;
@@ -43,10 +44,10 @@ public static class SceneHandler
     public static event Action<List<Scene>>? OnLoadedScenesUpdated;
 
     /// <summary>Generally will be 2, unless DontDestroyExists == false, then this will be 1.</summary>
-    internal static int DefaultSceneCount => 1 + (DontDestroyExists ? 1 : 0);
+    internal static int DefaultSceneCount => 1;
 
     /// <summary>Whether or not we are currently inspecting the "HideAndDontSave" asset scene.</summary>
-    public static bool InspectingAssetScene => SelectedScene.HasValue && SelectedScene.Value.handle == -1;
+    public static bool InspectingAssetScene => SelectedScene.HasValue && !SelectedScene.Value.IsValid();
 
     /// <summary>Whether or not we successfuly retrieved the names of the scenes in the build settings.</summary>
     public static bool WasAbleToGetScenesInBuild { get; private set; }
@@ -125,11 +126,7 @@ public static class SceneHandler
 
     internal static void Update()
     {
-        // Inspected scene will exist if it's DontDestroyOnLoad or HideAndDontSave
-        bool inspectedExists =
-            SelectedScene.HasValue
-            && ((DontDestroyExists && SelectedScene.Value.handle == -12)
-                || SelectedScene.Value.handle == -1);
+        bool inspectedExists = SelectedScene.HasValue && !SelectedScene.Value.IsValid();
 
         LoadedScenes.Clear();
 
@@ -150,16 +147,10 @@ public static class SceneHandler
             LoadedScenes.Add(scene);
         }
 
-        if (DontDestroyExists)
-        {
-            LoadedScenes.Add(new Scene { m_Handle = -12 });
-        }
-        LoadedScenes.Add(new Scene { m_Handle = -1 });
-
         // Default to first scene if none selected or previous selection no longer exists.
         if (!inspectedExists)
         {
-            SelectedScene = LoadedScenes.First();
+            SelectedScene = LoadedScenes.Count > 0 ? LoadedScenes[0] : null;
         }
 
         // Notify on the list changing at all

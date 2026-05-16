@@ -61,7 +61,14 @@ namespace UnityExplorer.UI
                     return;
 
                 UniversalUI.SetUIActive(ExplorerCore.GUID, value);
-                UniversalUI.SetUIActive(MouseInspector.UIBaseGUID, value);
+                try
+                {
+                    UniversalUI.SetUIActive(MouseInspector.UIBaseGUID, value);
+                }
+                catch (ArgumentException)
+                {
+                    // Mouse inspector is registered after the main panels; keep the main UI toggle usable if that setup was skipped.
+                }
             }
         }
 
